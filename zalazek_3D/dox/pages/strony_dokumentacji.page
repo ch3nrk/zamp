@@ -1,0 +1,31 @@
+/*!
+  \mainpage  Interpreter komend dla drona
+
+   Interpreter poleceń stworzony jest na potrzeby symulacji ...
+
+ */
+
+/*!
+
+  \page strona_glowna Sposób działania interpreta
+
+  \tableofcontents
+
+  \section etykieta_zalozenia Podstawowe założenia
+
+   Interpreter poleceń czyta polecania z pliku, w którym 
+   mogą być występować definicje symboli makr w sensie
+   języka C, jak też komentarze o budowie właściwej dla tego
+   języka.
+
+
+ \section etykieta_algorytm Opis algorytmu działania
+
+ Ponieżej przedstawiona jest podstawowa pętli przebiegu
+ procesu interpretacji listy poleceń.
+
+  \image html diagram_czynnosci.png
+
+
+
+*/

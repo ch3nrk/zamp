@@ -1,0 +1,11 @@
+Ponizej jest adres strony, ktora umozliwia sprawdzenie poprawnosci
+konstrukcji gramatyki.
+
+  http://www.w3.org/2001/03/webdata/xsv
+
+Plik gramatyki mozna zaladowac do parsera. Jesli po wczytaniu
+wyswietli sie pusta strona, to oznacza, ze konstrukcja jest
+poprawna.
+
+W przypadku przeciwnym wyswietla sie ostrzezenia lub komunikaty
+o bledach.

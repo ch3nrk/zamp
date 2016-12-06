@@ -1,0 +1,19 @@
+<Scene xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:noNamespaceSchemaLocation='grammar/scene.xsd' >
+    <Obstacle Name="Cuboid_A">
+      <Parameter  Name="Center_x" Value="5"/>
+      <Parameter  Name="Center_y" Value="5"/>
+      <Parameter  Name="Center_z" Value="0"/>
+      <Parameter  Name="Size_x" Value="10"/>
+      <Parameter  Name="Size_y" Value="7"/>
+      <Parameter  Name="Size_z" Value="4"/>
+    </Obstacle>
+    <Obstacle Name="Cuboid_B">
+      <Parameter  Name="Center_x" Value="10"/>
+      <Parameter  Name="Center_y" Value="5"/>
+      <Parameter  Name="Center_z" Value="0"/>
+      <Parameter  Name="Size_x" Value="5"/>
+      <Parameter  Name="Size_y" Value="24"/>
+      <Parameter  Name="Size_z" Value="18"/>
+    </Obstacle>
+</Scene>

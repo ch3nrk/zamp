@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+ <xs:complexType name="Type4Parameter">
+   <xs:sequence>
+    </xs:sequence>
+    <xs:attribute name="Name" type="xs:string" />
+    <xs:attribute name="Value" type="xs:float" />
+ </xs:complexType>
+
+ <xs:complexType name="Type4Obstacle">
+   <xs:sequence>
+     <xs:element name="Parameter" type="Type4Parameter"
+                                    minOccurs="6" maxOccurs="6"/>
+    </xs:sequence>
+    <xs:attribute name="Name" type="xs:string" />
+ </xs:complexType>
+
+
+ <xs:complexType name="Type4Scene">
+   <xs:sequence>
+    <xs:element name="Obstacle" type="Type4Obstacle" minOccurs="0" maxOccurs="unbounded" />
+   </xs:sequence>
+ </xs:complexType>
+
+ <xs:element name="Scene" type="Type4Scene">
+ </xs:element>
+
+</xs:schema>
