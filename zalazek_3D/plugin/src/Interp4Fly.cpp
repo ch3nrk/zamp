@@ -1,6 +1,7 @@
 #include <iostream>
 #include "Interp4Fly.hh"
 #include <unistd.h>
+#include <cmath>
 
 using std::cout;
 using std::endl;
@@ -14,8 +15,8 @@ extern "C" {
 
 
 /*!
- * \brief
- *
+ * 
+ * Fly odpowiada za lot wykorzystujac predosc wertykalna, predkosc horyzontalna i dlugosc trasy.
  *
  */
 Interp4Command* CreateCmd(void)
@@ -25,26 +26,25 @@ Interp4Command* CreateCmd(void)
 
 
 /*!
- *
+ * konstruktor, ustawiamy zerowe wartosci 
  */
-Interp4Fly::Interp4Fly(): _Speed_mmS(0)
+Interp4Fly::Interp4Fly(): _Speed_h_mS(0),_Speed_w_mS(0),_Length_m(0)
 {}
 
 
 /*!
- *
+ *wypisujemy bierzace wartosci zapisane we wtyczce 
  */
-void Interp4Fly::PrintCmd() const
-{
-  /*
-   *  Tu trzeba napisaÄ‡ odpowiednio zmodyfikowaÄ‡ kod poniÅ¼ej.
-   */
-  cout << GetCmdName() << " " << _Speed_mmS  << " 10  2" << endl;
+void Interp4Fly::PrintCmd() const{
+  
+  cout<<GetCmdName()<<" "<<_Speed_h_mS<<" [m/s]";
+  cout<<" "<<_Speed_w_mS<<" [m/s]";
+  cout<<" "<<_Length_m<<" [m]" <<endl;
 }
 
 
 /*!
- *
+ *wyswietalamy nazwe wtyczki
  */
 const char* Interp4Fly::GetCmdName() const
 {
@@ -53,61 +53,60 @@ const char* Interp4Fly::GetCmdName() const
 
 
 /*!
- *
+ *obliczamy i wykonujemy trajektorie dla przechowywanych wartosci 
  */
-bool Interp4Fly::ExecCmd( DronPose     *pRobPose,  Visualization *pVis) const
-{
-  /*
-   *  Tu trzeba napisaÄ‡ odpowiedni kod.
-   */
-
-    // Przyklad prostego kodu, ktÃ³ry "na sztywno" wykonuje przelot drona
-
-    //----------------------------------------------------
-    // To tylko po to, aby zademonstrowaÄ‡ pracÄ™ wirnikÃ³w
-    //
-  for (int i=1; i < 20; ++i) {
-    pVis->Draw(pRobPose);
-    usleep(100000);  // Pauza 0,1 sek.
-  }
+bool Interp4Fly::ExecCmd( DronPose  *pRobPose,  Visualization *pVis) const{
   
+  double alfa,beta,x,y,z,v;
+  Wektor3D poczatek=pRobPose->GetPos_m();
 
-  pRobPose->SetPos_m(55,10,55);
+  alfa=pRobPose->GetAngle_deg(alfa);
+  
+  if(_Speed_w_mS*_Speed_h_mS<0) beta=atan(-1*(_Speed_w_mS/_Speed_h_mS));
+  else beta=atan(_Speed_w_mS/_Speed_h_mS);
+  
+  v=_Length_m*cos(beta);
+
+  x=v*sin(M_PI*alfa/180);
+  y=v*cos(M_PI*alfa/180);
+  z=_Length_m*sin(beta);
+
+  if(_Speed_h_mS<0) y*=-1;
+ 
+  pRobPose->SetPos_m( poczatek[0]+x,poczatek[1]+y,poczatek[2]+z);
   pVis->Draw(pRobPose);
-  usleep(800000);  // Pauza 0,8 sek.
-
-  pRobPose->SetPos_m(75,105,105);
-  pVis->Draw(pRobPose);
-  usleep(800000);  // Pauza 0,3 sek.
-
-  pRobPose->SetPos_m(135,135,155);
-  pVis->Draw(pRobPose);
-  usleep(300000);  // Pauza 0,3 sek.
-
-
-  for (int i=1; i < 20; ++i) {
-    pVis->Draw(pRobPose);
-    usleep(100000);  // Pauza 0,1 sek.
-  }
-    
+  usleep(800000);
+ 
   return true;
 }
 
 
 /*!
- *
+ *wczytujemy nowe parametry, nieporawne wartosci zwracj± b³ad i wyswietlaj± niepoprawn± komende.
  */
-bool Interp4Fly::ReadParams(std::istream& Strm_CmdsList)
-{
-  /*
-   *  Tu trzeba napisaÄ‡ odpowiedni kod.
-   */
+bool Interp4Fly::ReadParams(std::istream& Strm_CmdsList){
+
+  Strm_CmdsList>>_Speed_h_mS>>_Speed_w_mS>>_Length_m;
+
+  if(_Length_m<0){
+
+    cout<<"droga musi byc >=0 -> ";
+    PrintCmd();
+    return false;
+  }  
+  else if(_Length_m>0 && (_Speed_h_mS==0 && _Speed_w_mS==0)){
+      
+      cout<<"droga tez musi byc rozna od 0 -> ";
+      PrintCmd();
+      return false;
+  }
+ 
   return true;
 }
 
 
 /*!
- *
+ *tworzymy nowa wtyczkê 
  */
 Interp4Command* Interp4Fly::CreateCmd()
 {
@@ -116,7 +115,7 @@ Interp4Command* Interp4Fly::CreateCmd()
 
 
 /*!
- *
+ *wyswietlamy parametry danej wtyczki 
  */
 void Interp4Fly::PrintSyntax() const
 {

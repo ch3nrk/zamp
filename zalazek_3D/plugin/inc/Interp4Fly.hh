@@ -1,5 +1,5 @@
-#ifndef  COMMAND4MOVE_HH
-#define  COMMAND4MOVE_HH
+#ifndef  COMMAND4FLY_HH
+#define  COMMAND4FLY_HH
 
 #ifndef __GNUG__
 # pragma interface
@@ -12,13 +12,13 @@
  * \file
  * \brief Definicja klasy Interp4Fly
  *
- * Plik zawiera definicję klasy Interp4Fly ...
+ * Plik zawiera definicję klasy Interp4Fly
  */
 
 /*!
  * \brief Modeluje polecenie dla robota mobilnego, które wymusza jego ruch do przodu
  *
- *  Klasa modeluje ...
+ *  Klasa modeluje polecenie które wymusza ruch.
  */
 class Interp4Fly: public Interp4Command {
   /*
@@ -26,7 +26,10 @@ class Interp4Fly: public Interp4Command {
    *  do przechowywania wartości parametrów danego polecenia.
    *  Ponieżej zdefiniowane jest tylko jedno pole jako przykład.
    */
-  double  _Speed_mmS;
+  double  _Speed_h_mS;
+  double  _Speed_w_mS;
+  double  _Length_m;
+
  public:
   /*!
    * \brief

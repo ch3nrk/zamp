@@ -7,11 +7,15 @@ obj:
 __plugin__:
 	cd plugin; make
 
-CPPFLAGS=-Wall -pedantic -std=c++11 -iquote inc
+CPPFLAGS=-Wall -pedantic -std=c++0x -iquote inc
 LDFLAGS=-Wall
 
-interp: obj/main.o obj/lacze_do_gnuplota.o obj/GnuplotVisualizer.o obj/Wektor3D.o
-	g++ ${LDFLAGS} -o interp  obj/main.o obj/lacze_do_gnuplota.o obj/GnuplotVisualizer.o obj/Wektor3D.o -ldl
+
+interp: obj/main.o obj/lacze_do_gnuplota.o obj/GnuplotVisualizer.o obj/Wektor3D.o obj/xmlparser4scene.o
+	g++ ${LDFLAGS} -o interp  obj/main.o obj/lacze_do_gnuplota.o obj/GnuplotVisualizer.o obj/Wektor3D.o obj/xmlparser4scene.o -ldl -lxerces-c
+
+obj/xmlparser4scene.o: src/xmlparser4scene.cpp inc/xmlparser4scene.hh
+	g++ -c ${CPPFLAGS} -o obj/xmlparser4scene.o src/xmlparser4scene.cpp
 
 obj/lacze_do_gnuplota.o: src/lacze_do_gnuplota.cpp inc/lacze_do_gnuplota.hh
 	g++  -c ${CPPFLAGS} -o obj/lacze_do_gnuplota.o src/lacze_do_gnuplota.cpp
