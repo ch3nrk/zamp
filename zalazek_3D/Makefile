@@ -12,7 +12,7 @@ LDFLAGS=-Wall
 
 
 interp: obj/main.o obj/lacze_do_gnuplota.o obj/GnuplotVisualizer.o obj/Wektor3D.o obj/xmlparser4scene.o
-	g++ ${LDFLAGS} -o interp  obj/main.o obj/lacze_do_gnuplota.o obj/GnuplotVisualizer.o obj/Wektor3D.o obj/xmlparser4scene.o -ldl -lxerces-c
+	g++ ${LDFLAGS} -o interp  obj/main.o obj/lacze_do_gnuplota.o obj/GnuplotVisualizer.o obj/Wektor3D.o obj/xmlparser4scene.o -ldl -lxerces-c -lreadline
 
 obj/xmlparser4scene.o: src/xmlparser4scene.cpp inc/xmlparser4scene.hh
 	g++ -c ${CPPFLAGS} -o obj/xmlparser4scene.o src/xmlparser4scene.cpp

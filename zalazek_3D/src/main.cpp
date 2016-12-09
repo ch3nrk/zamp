@@ -18,9 +18,8 @@
 #include <fstream>
 #include <map>
 #include <sstream>
-
-//#include <readline/readline.h>
-//#include <readline/history.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 using namespace std;
 using namespace xercesc;
@@ -116,11 +115,13 @@ int main(int argc, char *argv[]){
   wtyczki["Pause"]=pCmd_Pause;
   wtyczki["ReadScene"]=pCmd_ReadScene;
 
-  Scene  Scn;
+  Scene  Scn;  if (!ReadFile("scene.xml",Scn)) return 1;
 
-  if (!ReadFile("scene.xml",Scn)) return 1;
+  rl_bind_key('\t',rl_complete);
+  const char *szacheta="\tTwoj wybor (?-menu): ";
+  char * polecenie;
+
   stringstream sekwencja;
-  char polecenie;
   string menu=
 	
     string("w - wczytanie nazwy pliku sekwencji instrukcji dla drona\n")+
@@ -134,110 +135,121 @@ int main(int argc, char *argv[]){
 
  
   if(argc==1){
+
     cout<<menu;
     do{
-
-    cout<<"\tTwoj wybor (?-menu): ";
-    cin>>polecenie;
-    
-    switch(polecenie){
       
-    case 'w':{
+      polecenie=readline(szacheta);
+      if(!polecenie) *polecenie='k'; 
+      add_history(polecenie);
+     
+      switch(*polecenie){
+      
+      case 'w':{
      	     	
-      cout<<"Podaj nazwe pliku: ";
-      string nazwa;
-      cin>>nazwa;
-      cout<<wczytaj_cmd(nazwa,sekwencja)<<endl<<endl;
-
-      break;
-    }
-                    
-    case 'p':{
-
-      stringstream temp;
-      string tmp;
-      
-      while(!sekwencja.eof()){
-
-	tmp.clear();
-	sekwencja>>tmp;
-	if(tmp=="Fly"||tmp=="Rotate"||tmp=="Turn"||tmp=="Pause"||tmp=="ReadScene") cout<<endl;
-	cout<<tmp<<" ";
-	temp<<tmp<<" ";
-      }
-
-      cout<<endl;
-      sekwencja.clear();
-      
-      while(!temp.eof()){
+	cout<<"Podaj nazwe pliku: ";
+	string nazwa;
+	cin>>nazwa;
+	cout<<wczytaj_cmd(nazwa,sekwencja)<<endl<<endl;
 	
-	tmp.clear();
-	temp>>tmp;
-	sekwencja<<tmp<<" ";
+	break;
       }
-      break;
-    }
-          
-    case 'i':{
-      
-      for(auto i=wtyczki.cbegin();i!=wtyczki.cend();++i)
-	i->second->PrintSyntax();
-      
-      break;
-    }
-      
-    case 's':{
-      
-      wykonaj(sekwencja,wtyczki);
-      
-      break;
-    }	      
-      
-    case 'a':{
-      
-      cout<<"nazwa: ";
-      string nazwa;
-      cin>>nazwa;
-      auto search=wtyczki.find(nazwa);
-      if(search != wtyczki.end()) cout<<"juz istnieje\n";
-      else if(nazwa=="Fly"){ wtyczki[nazwa]=pCmd_Fly; cout<<"dodano\n";}
-      else if(nazwa=="Rotate"){ wtyczki[nazwa]=pCmd_Rotate; cout<<"dodano\n";}
-      else if(nazwa=="Turn"){ wtyczki[nazwa]=pCmd_Turn; cout<<"dodano\n";}
-      else if(nazwa=="Pause"){ wtyczki[nazwa]=pCmd_Turn; cout<<"dodano\n";}
-      else if(nazwa=="ReadScene"){ wtyczki[nazwa]=pCmd_Turn; cout<<"dodano\n";}
-      else cout<<"zla nazwa\n";
-
-      break;
-    }
-      
-    case 'd':{
-      
-      cout<<"nazwa: ";
-      string nazwa;
-      cin>>nazwa;
-      
-      auto search=wtyczki.find(nazwa);
-      if(search == wtyczki.end()) cout<<"nie ma takiej\n";
-      else{
-	wtyczki.erase(search);
-	cout<<"usunieto\n";
+	
+      case 'p':{
+	
+	stringstream temp;
+	string tmp;
+	
+	while(!sekwencja.eof()){
+	  
+	  tmp.clear();
+	  sekwencja>>tmp;
+	  if(tmp=="Fly"||tmp=="Rotate"||tmp=="Turn"||tmp=="Pause"||tmp=="ReadScene") cout<<endl;
+	  cout<<tmp<<" ";
+	  temp<<tmp<<" ";
+	}
+	
+	cout<<endl;
+	sekwencja.clear();
+	
+	while(!temp.eof()){
+	  
+	  tmp.clear();
+	  temp>>tmp;
+	  sekwencja<<tmp<<" ";
+	}
+	break;
       }
-      break;
-    }
-      
-    case '?':{
-      
-      cout<<menu;
-      break;
-    }
+	
+      case 'i':{
+	
+	for(auto i=wtyczki.cbegin();i!=wtyczki.cend();++i)
+	  i->second->PrintSyntax();
+	
+	break;
+      }
+	
+      case 's':{
+	
+	wykonaj(sekwencja,wtyczki);
+	
+	break;
+      }	      
+	
+      case 'a':{
+	
+	cout<<"nazwa: ";
+	string nazwa;
+	cin>>nazwa;
+	auto search=wtyczki.find(nazwa);
+	if(search != wtyczki.end()) cout<<"juz istnieje\n";
+	else if(nazwa=="Fly"){ wtyczki[nazwa]=pCmd_Fly; cout<<"dodano\n";}
+	else if(nazwa=="Rotate"){ wtyczki[nazwa]=pCmd_Rotate; cout<<"dodano\n";}
+	else if(nazwa=="Turn"){ wtyczki[nazwa]=pCmd_Turn; cout<<"dodano\n";}
+	else if(nazwa=="Pause"){ wtyczki[nazwa]=pCmd_Turn; cout<<"dodano\n";}
+	else if(nazwa=="ReadScene"){ wtyczki[nazwa]=pCmd_Turn; cout<<"dodano\n";}
+	else cout<<"zla nazwa\n";
 
-    }
+	break;
+      }
+      
+      case 'd':{
+      
+	cout<<"nazwa: ";
+	string nazwa;
+	cin>>nazwa;
+	
+	auto search=wtyczki.find(nazwa);
+	if(search == wtyczki.end()) cout<<"nie ma takiej\n";
+	else{
+	  wtyczki.erase(search);
+	  cout<<"usunieto\n";
+	}
+	break;
+      }
+	
+      case '?':{
+	
+	cout<<menu;
+	break;
+      }
+	
+      }
+
+     
+
+    }while (*polecenie != 'k');
   }
-  while (polecenie != 'k');
-  }
- 
+  
   else if(argc==2){
-    cout << "Nacisnij ENTER, aby rozpoczac ... " << flush;
+    cout << "Aby rozpoczac lot, nacisniecie klawisza ENTER" << endl;
+    cin >> skipws;
+    cin.ignore(100000,'\n');
+
+    //pCmd_Fly->ExecCmd(&DPose,&PlotVis); // Wykonanie polecenia wraz z jego wizualizacj±
+    
+    cout << "Aby zakonczyc, nacisniecie klawisza ENTER" << endl;
+    cin.ignore(100000,'\n');
   }
 
   delete pCmd_Fly;
