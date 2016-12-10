@@ -15,6 +15,9 @@
  * to położenie środka prostopadłościanu oraz długość poszczególnych boków.
  */
 class Cuboid {
+
+  Wektor3D Center,Size;
+
   public:
   /*!
    * \brief Destruktor wirtualny dla poprawnej destrukcji obiektu
@@ -30,7 +33,7 @@ class Cuboid {
    *  Udostępnia przestrzenne współrzędne geometrycznego 
    *  środka prostopadłościanu.
    */
-   virtual const Wektor3D &GetCenter() const = 0;
+  virtual const Wektor3D &GetCenter(){return Center;}
 
   /*!
    * \brief Udostępnia długości boków prostopadłościanu
@@ -42,7 +45,10 @@ class Cuboid {
    *  do danej osi. Tak więc np. współrzędna x-owa zawiera długość boku,
    *  który równoległy jest do osi OX.
    */
-   virtual const Wektor3D &GetSize() const = 0;
+  virtual const Wektor3D &GetSize(){return Size;}
+
+  Cuboid(Wektor3D c, Wektor3D s){ Center=c; Size=s; }
+ 
 };
 
 

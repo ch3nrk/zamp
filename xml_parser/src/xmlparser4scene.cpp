@@ -71,7 +71,7 @@ void XMLParser4Scene::WhenStartElement( const std::string       &ElemName,
     if(strcmp(xercesc::XMLString::transcode(Attrs.getQName(i)), "Value")==0){
       if(String2Float(xercesc::XMLString::transcode(Attrs.getValue(static_cast<XMLSize_t>(i))), val)){
 
-	cout<<"="<< val;
+	cout<<"="<< val;cout<<i;
 	  
 	  }else return;
 	}

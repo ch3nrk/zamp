@@ -24,10 +24,19 @@
 using namespace std;
 using namespace xercesc;
 
-
+/*!
+ * \brief wczytuje sekwencje
+ *wczytujemy plik, nastepnie za pomaca funkcji popen wykonujemy skrypt pre_cmd.sh ktory przetwarza nasz plik o nazwie \param[in] nazwaPiku z komendami funkcja "cpp -P"
+ *tworzy sie nowy plik ktorego zawartosc wczytywana jest do \param[in] sekwencja
+ */
 bool wczytaj_cmd(string nazwaPliku, stringstream &sekwencja);
+/*!
+ *\brief wyswietla sekwencje gnuplotem
+ *\param[in] wtyczki - przekazuje nam obecnie wczytane wtyczki dla ktorych zostanie wykonana trajektoria.
+ *param[in] sekwencja - stream z  poleceniami ktore maja zostac przedstawione, polecenia bez wczytanej wtyczki zostana pominiete.
+ */
 bool wykonaj(stringstream &sekwencja, map<string,Interp4Command*> &wtyczki);
-bool wczytaj(char *argv[]);
+bool wczytaj(char *argv[], map<string,Interp4Command*> &wtyczki);
 bool ReadFile(const char* sFileName, Scene& Scn);
 
 
@@ -115,7 +124,7 @@ int main(int argc, char *argv[]){
   wtyczki["Pause"]=pCmd_Pause;
   wtyczki["ReadScene"]=pCmd_ReadScene;
 
-  Scene  Scn;  if (!ReadFile("scene.xml",Scn)) return 1;
+  //Scene  Scn;  if (!ReadFile("scene.xml",Scn)) return 1;
 
   rl_bind_key('\t',rl_complete);
   const char *szacheta="\tTwoj wybor (?-menu): ";
@@ -242,12 +251,13 @@ int main(int argc, char *argv[]){
   }
   
   else if(argc==2){
+
     cout << "Aby rozpoczac lot, nacisniecie klawisza ENTER" << endl;
     cin >> skipws;
     cin.ignore(100000,'\n');
-
-    //pCmd_Fly->ExecCmd(&DPose,&PlotVis); // Wykonanie polecenia wraz z jego wizualizacj±
     
+    wczytaj(argv,wtyczki);
+   
     cout << "Aby zakonczyc, nacisniecie klawisza ENTER" << endl;
     cin.ignore(100000,'\n');
   }
@@ -270,11 +280,7 @@ int main(int argc, char *argv[]){
   return 0;
 }
 
-/*!
- * \brief wczytuje sekwencje
- *wczytujemy plik, nastepnie za pomaca funkcji popen wykonujemy skrypt pre_cmd.sh ktory przetwarza nasz plik o nazwie \param[in] nazwaPiku z komendami funkcja "cpp -P"
- *tworzy sie nowy plik ktorego zawartosc wczytywana jest do \param[in] sekwencja
- */
+
 bool wczytaj_cmd(string nazwaPliku,stringstream &sekwencja){
   
   string tmp=string("./pre_cmd.sh ")+nazwaPliku;
@@ -302,11 +308,7 @@ bool wczytaj_cmd(string nazwaPliku,stringstream &sekwencja){
   return true;
 }
 
-/*!
- *\brief wyswietla sekwencje gnuplotem
- *\param[in] wtyczki - przekazuje nam obecnie wczytane wtyczki dla ktorych zostanie wykonana trajektoria.
- *param[in] sekwencja - stream z  poleceniami ktore maja zostac przedstawione, polecenia bez wczytanej wtyczki zostana pominiete.
- */
+
 bool wykonaj(stringstream &sekwencja, map<string,Interp4Command*> &wtyczki){
   
   if(sekwencja.eof()){ cerr<<" brak sekwencji\n"; return false;}
@@ -352,23 +354,27 @@ bool wykonaj(stringstream &sekwencja, map<string,Interp4Command*> &wtyczki){
   return true;
 }
 
-/*
-bool wczytaj( char *argv[]){
 
-  string tmp=string("./pre_cmd.sh ")+nazwaPliku;
-  const char *cc=tmp.c_str();
+bool wczytaj(char *argv[], map<string,Interp4Command*> &wtyczki){
+
+  char tmp[20]="./pre_cmd.sh ";
+  strcat(tmp,argv[1]);
+  const char *cc=tmp;
+ 
   FILE *p= popen(cc,"r");
   pclose(p);
-  nazwaPliku+=string("_pre"); 
 
+  char  nazwaPliku[20];
+  strcpy(nazwaPliku,argv[1]);
+  strcat(nazwaPliku,"_pre"); 
   ifstream plik;
 
-  plik.open( nazwaPliku.c_str() );
+  plik.open( nazwaPliku );
   if( !plik.good() ){ cerr<<"blad pliku\n"; return false;}
 
-  string pozycja;     
-  sekwencja.clear();
-  
+  string pozycja; 
+  stringstream sekwencja;
+ 
   while( !plik.eof() ){
 
     pozycja.clear();
@@ -377,9 +383,51 @@ bool wczytaj( char *argv[]){
   }
 
   plik.close();
-  return true;
+
+  if(sekwencja.eof()){ cerr<<" brak sekwencji\n"; return false;}
+  if(wtyczki.size()<3){ 
+    cout<<" nie wczytales wszystkich  wtyczek,\n dane sekwencje zostana pominiete,\n chcesz kontynuowac [T/N] \n";
+    string odp;
+    cin>>odp;
+    if(odp=="N") return false;
+  }
+ 
+  ofstream plik_w;
+
+  string nazwa_pliku="wynik.txt";
+  plik_w.open( nazwa_pliku.c_str() );
+  if( !plik_w.good() ){ cerr<<"blad pliku\n"; return false;}
+
+  DronPose            DPose;
+  GnuplotVisualizer   PlotVis;
+  DPose.SetPos_m(0,0,0);
+  PlotVis.Draw(&DPose);
+
+  Wektor3D temp;
+  string nazwa;
+
+  wtyczki["ReadScene"]->ReadParams(sekwencja);
+  wtyczki["ReadScene"]->ExecCmd(&DPose,&PlotVis);
+
+  while(!sekwencja.eof()){
+    nazwa.clear();
+    sekwencja>>nazwa;
+
+    auto search=wtyczki.find(nazwa);
+    if(search != wtyczki.end()){
+      
+      if(search->second->ReadParams(sekwencja)){
+
+	temp=DPose.GetPos_m();
+	plik_w<<temp[0]<<" "<<temp[1]<<" "<<temp[2]<<endl;
+	search->second->ExecCmd(&DPose,&PlotVis);
+      }
+    }
+    
+  }
+  plik.close();
 }
-*/
+
 bool ReadFile(const char* sFileName, Scene& Scn)
 {
    try {
