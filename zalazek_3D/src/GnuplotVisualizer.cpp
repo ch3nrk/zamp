@@ -3,9 +3,14 @@
 #include <iostream>
 #include <cmath>
 #include "Wektor3D.hh"
-
+#include "xmlparser4scene.hh"
+#include <string>
+#include <xercesc/sax2/SAX2XMLReader.hpp>
+#include <xercesc/sax2/XMLReaderFactory.hpp>
+#include <xercesc/sax2/DefaultHandler.hpp>
+#include <xercesc/util/XMLString.hpp>
 using namespace std;
-
+using namespace xercesc;
 #define FILE_NAME__ROTOR_TEMPLATE "wzor_rotora.dat"
 #define FILE_NAME__ROTOR1          "rotor1.dat"
 #define FILE_NAME__ROTOR2          "rotor2.dat"
@@ -310,24 +315,104 @@ void GnuplotVisualizer::Draw( const DronPose *pPose )
  */
 bool GnuplotVisualizer::ReadScene(const char* FileName_XML)
 {
-   // 1. Powinniśmy sprawdzić, czy można otworzyć plik o podanej nazwie,
-   //    jeśli nie, to kończymy działanie.
-   //
-   // 2. Usuwamy dotychczasowe obiekty 
 
-   // 3. Następnie usuwamy wszystkie nazwy plików związne ze starymi
-   //    obiektami.
+  // 2. Usuwamy dotychczasowe obiekty
+  _pScn->remove_all();
+  
+  // 3. Następnie usuwamy wszystkie nazwy plików związne ze starymi
+  //    obiektami.
   Plotter. UsunWszystkieNazwyPlikow();
-
-   // 4. Pozostawiamy nazwy plików, które wiążą się z elementami konstrukcji drona
+  
+  // 4. Pozostawiamy nazwy plików, które wiążą się z elementami konstrukcji drona
   AddDronFileNames4Gnuplot();
 
-   // 5. Tu powinniśmy rozpocząć czytanie plików i dodać przeszkody.
-   //    W tej metodzie udajemy, że czytamy i wstawiamy przeszkody 
-   //    Tworzymi pliki z obrysem prostopadłościanów modelujących przeszkody
-   //    i przekazujemy ich nazwy do modułu lacze_do_gnuplota. 
+  try {
+    XMLPlatformUtils::Initialize();
+  }
+  catch (const XMLException& toCatch) {
+    char* message = XMLString::transcode(toCatch.getMessage());
+    cerr << "Error during initialization! :\n";
+    cerr << "Exception message is: \n"
+	 << message << "\n";
+    XMLString::release(&message);
+    return 1;
+  }
+  
+  SAX2XMLReader* pParser = XMLReaderFactory::createXMLReader();
+  
+  pParser->setFeature(XMLUni::fgSAX2CoreNameSpaces, true);
+  pParser->setFeature(XMLUni::fgSAX2CoreValidation, true);
+  pParser->setFeature(XMLUni::fgXercesDynamic, false);
+  pParser->setFeature(XMLUni::fgXercesSchema, true);
+  pParser->setFeature(XMLUni::fgXercesSchemaFullChecking, true);
+  
+  pParser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
+  
+  DefaultHandler* pHandler = new XMLParser4Scene(*_pScn);
+  pParser->setContentHandler(pHandler);
+  pParser->setErrorHandler(pHandler);
 
-   // Tu tworzymy nowy plik z obrysem przeszkody transformując sześcian o boku 1
+  try {
+    
+    if (!pParser->loadGrammar("grammar/scene.xsd",
+			      xercesc::Grammar::SchemaGrammarType,true)) {
+      cerr << "!!! Plik grammar/scene.xsd, '" << endl
+	   << "!!! ktory zawiera opis gramatyki, nie moze zostac wczytany."
+	   << endl;
+      return false;
+    }
+    pParser->setFeature(XMLUni::fgXercesUseCachedGrammarInParse,true);
+    pParser->parse(FileName_XML);
+  }
+  catch (const XMLException& Exception) {
+    char* sMessage = XMLString::transcode(Exception.getMessage());
+    cerr << "Informacja o wyjatku: \n"
+	 << "   " << sMessage << "\n";
+    XMLString::release(&sMessage);
+    return false;
+  }
+  catch (const SAXParseException& Exception) {
+    char* sMessage = XMLString::transcode(Exception.getMessage());
+    char* sSystemId = xercesc::XMLString::transcode(Exception.getSystemId());
+    
+    cerr << "Blad! " << endl
+	 << "    Plik:  " << sSystemId << endl
+	 << "   Linia: " << Exception.getLineNumber() << endl
+	 << " Kolumna: " << Exception.getColumnNumber() << endl
+	 << " Informacja: " << sMessage 
+	 << endl;
+    
+    XMLString::release(&sMessage);
+    XMLString::release(&sSystemId);
+    return false;
+  }
+  catch (...) {
+    cout << "Zgloszony zostal nieoczekiwany wyjatek!\n" ;
+    return false;
+  }
+ 
+  Wektor3D size,center;
+
+  for(int i=0;i<(_pScn->size_of());i++){
+
+    _pScn->get_parameters(size,center,i);
+    
+    if (!TransformGeom(FILE_NAME__DRON_BODY_TEMPLATE,("przeszkoda"+to_string(i)+".dat").c_str(), center, 0, size)) return false;
+    Plotter.DodajNazwePliku(("przeszkoda"+to_string(i)+".dat").c_str(),PzG::RR_Ciagly,1,12);
+  }
+  
+  delete pParser;
+  delete pHandler;
+   
+  return true;
+}
+
+void GnuplotVisualizer::VisualizerScene(Scene &Scn)
+{
+  _pScn = &Scn;
+}
+/*
+// Tu tworzymy nowy plik z obrysem przeszkody transformując sześcian o boku 1
    // do prostopadłościanu i przesuwając go w odpowiednie miejsce.
   if (!TransformGeom(FILE_NAME__DRON_BODY_TEMPLATE, FILE_NAME__OBSTACLE1,
                      Wektor3D(10,80,10), 0, Wektor3D(40,20,10))) return false;
@@ -344,7 +429,4 @@ bool GnuplotVisualizer::ReadScene(const char* FileName_XML)
   if (!TransformGeom(FILE_NAME__DRON_BODY_TEMPLATE,FILE_NAME__OBSTACLE3,
                      Wektor3D(150,60,60), 0, Wektor3D(10,10,120))) return false;
   Plotter.DodajNazwePliku(FILE_NAME__OBSTACLE3,PzG::RR_Ciagly,1,12);
-
-  return true;
-}
-
+*/

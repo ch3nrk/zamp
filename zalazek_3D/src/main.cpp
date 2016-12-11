@@ -327,8 +327,10 @@ bool wykonaj(stringstream &sekwencja, map<string,Interp4Command*> &wtyczki){
 
   DronPose            DPose;
   GnuplotVisualizer   PlotVis;
+ 
   DPose.SetPos_m(0,0,0);
   PlotVis.Draw(&DPose);
+  
 
   Wektor3D tmp;
   string nazwa;
@@ -400,14 +402,14 @@ bool wczytaj(char *argv[], map<string,Interp4Command*> &wtyczki){
 
   DronPose            DPose;
   GnuplotVisualizer   PlotVis;
+  Scene Scn;
+
+  PlotVis.VisualizerScene(Scn);
   DPose.SetPos_m(0,0,0);
   PlotVis.Draw(&DPose);
 
   Wektor3D temp;
   string nazwa;
-
-  wtyczki["ReadScene"]->ReadParams(sekwencja);
-  wtyczki["ReadScene"]->ExecCmd(&DPose,&PlotVis);
 
   while(!sekwencja.eof()){
     nazwa.clear();
@@ -425,78 +427,6 @@ bool wczytaj(char *argv[], map<string,Interp4Command*> &wtyczki){
     }
     
   }
-  plik.close();
-}
-
-bool ReadFile(const char* sFileName, Scene& Scn)
-{
-   try {
-            XMLPlatformUtils::Initialize();
-   }
-   catch (const XMLException& toCatch) {
-            char* message = XMLString::transcode(toCatch.getMessage());
-            cerr << "Error during initialization! :\n";
-            cerr << "Exception message is: \n"
-                 << message << "\n";
-            XMLString::release(&message);
-            return 1;
-   }
-
-   SAX2XMLReader* pParser = XMLReaderFactory::createXMLReader();
-
-   pParser->setFeature(XMLUni::fgSAX2CoreNameSpaces, true);
-   pParser->setFeature(XMLUni::fgSAX2CoreValidation, true);
-   pParser->setFeature(XMLUni::fgXercesDynamic, false);
-   pParser->setFeature(XMLUni::fgXercesSchema, true);
-   pParser->setFeature(XMLUni::fgXercesSchemaFullChecking, true);
-
-   pParser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
-
-   DefaultHandler* pHandler = new XMLParser4Scene(Scn);
-   pParser->setContentHandler(pHandler);
-   pParser->setErrorHandler(pHandler);
-
-   try {
-     
-     if (!pParser->loadGrammar("grammar/scene.xsd",
-                              xercesc::Grammar::SchemaGrammarType,true)) {
-       cerr << "!!! Plik grammar/scene.xsd, '" << endl
-            << "!!! ktory zawiera opis gramatyki, nie moze zostac wczytany."
-            << endl;
-       return false;
-     }
-     pParser->setFeature(XMLUni::fgXercesUseCachedGrammarInParse,true);
-     pParser->parse(sFileName);
-   }
-   catch (const XMLException& Exception) {
-            char* sMessage = XMLString::transcode(Exception.getMessage());
-            cerr << "Informacja o wyjatku: \n"
-                 << "   " << sMessage << "\n";
-            XMLString::release(&sMessage);
-            return false;
-   }
-   catch (const SAXParseException& Exception) {
-            char* sMessage = XMLString::transcode(Exception.getMessage());
-            char* sSystemId = xercesc::XMLString::transcode(Exception.getSystemId());
-
-            cerr << "Blad! " << endl
-                 << "    Plik:  " << sSystemId << endl
-                 << "   Linia: " << Exception.getLineNumber() << endl
-                 << " Kolumna: " << Exception.getColumnNumber() << endl
-                 << " Informacja: " << sMessage 
-                 << endl;
-
-            XMLString::release(&sMessage);
-            XMLString::release(&sSystemId);
-            return false;
-   }
-   catch (...) {
-            cout << "Zgloszony zostal nieoczekiwany wyjatek!\n" ;
-            return false;
-   }
-
-   delete pParser;
-   delete pHandler;
-   return true;
+  plik_w.close();
 }
 
