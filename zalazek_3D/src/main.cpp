@@ -18,6 +18,7 @@
 #include <fstream>
 #include <map>
 #include <sstream>
+#include <cmath>
 #include <readline/readline.h>
 #include <readline/history.h>
 
@@ -26,18 +27,31 @@ using namespace xercesc;
 
 /*!
  * \brief wczytuje sekwencje
- *wczytujemy plik, nastepnie za pomaca funkcji popen wykonujemy skrypt pre_cmd.sh ktory przetwarza nasz plik o nazwie \param[in] nazwaPiku z komendami funkcja "cpp -P"
- *tworzy sie nowy plik ktorego zawartosc wczytywana jest do \param[in] sekwencja
+ *wczytujemy plik, nastepnie za pomaca funkcji popen wykonujemy skrypt pre_cmd.sh 
+ * \param[in] nazwaPiku nazwa pliku który zostanie przetworzony funkcja "cpp -P"
+ * \param[in] sekwencja stream polecen wczytanych z pliku
  */
 bool wczytaj_cmd(string nazwaPliku, stringstream &sekwencja);
 /*!
- *\brief wyswietla sekwencje gnuplotem
- *\param[in] wtyczki - przekazuje nam obecnie wczytane wtyczki dla ktorych zostanie wykonana trajektoria.
- *param[in] sekwencja - stream z  poleceniami ktore maja zostac przedstawione, polecenia bez wczytanej wtyczki zostana pominiete.
+ * \brief wyswietla sekwencje gnuplotem
+ * \param[in] wtyczki  przekazuje nam obecnie wczytane wtyczki dla ktorych zostanie wykonana trajektoria.
+ * \param[in] sekwencja - stream z  poleceniami ktore maja zostac przedstawione, polecenia bez wczytanej wtyczki zostana pominiete.
  */
 bool wykonaj(stringstream &sekwencja, map<string,Interp4Command*> &wtyczki);
+/*!
+ * \brief funkcja wywolywana przy podania pliku polecen podczas uruchomienia programu
+ * \param[in] *argv wskaznik do tablicy nazw parametrow wczytanych podczas uruchomienia 
+ * \param[in] wtyczki przechowuje wszystkie dostepne wtyczki 
+ */
 bool wczytaj(char *argv[], map<string,Interp4Command*> &wtyczki);
-bool ReadFile(const char* sFileName, Scene& Scn);
+
+/*!
+   * \brief Sprawdza czy nast±pi³a kolizja
+   *  Algorytm testuj±cy kolizje walca wraz z prostopad³o¶cianem.
+   * \retval true  - jesli wyst±pi³a kolizja miedzy elementami
+   * \retval false - je¶li nie wyst±pi³a
+ */
+bool Colision(DronPose &Dpose,Scene &Scn);
 
 
 int main(int argc, char *argv[]){
@@ -257,9 +271,6 @@ int main(int argc, char *argv[]){
     cin.ignore(100000,'\n');
     
     wczytaj(argv,wtyczki);
-   
-    cout << "Aby zakonczyc, nacisniecie klawisza ENTER" << endl;
-    cin.ignore(100000,'\n');
   }
 
   delete pCmd_Fly;
@@ -328,10 +339,11 @@ bool wykonaj(stringstream &sekwencja, map<string,Interp4Command*> &wtyczki){
   DronPose            DPose;
   GnuplotVisualizer   PlotVis;
  
-  DPose.SetPos_m(0,0,0);
+  DPose.SetPos_m(0,0,-100);
   PlotVis.Draw(&DPose);
-  
+  Scene Scn;
 
+  PlotVis.VisualizerScene(Scn);
   Wektor3D tmp;
   string nazwa;
 
@@ -354,6 +366,36 @@ bool wykonaj(stringstream &sekwencja, map<string,Interp4Command*> &wtyczki){
   plik.close();
    
   return true;
+}
+
+#define DRONE_Z 50
+#define DRONE_R 50
+
+bool Colision(DronPose &Dpose,Scene &Scn){
+
+  Wektor3D center,size,pose,test;
+
+ Scn.get_parameters(center,size,0);
+ pose=Dpose.GetPos_m();
+
+ test[0]=abs(pose[0]-center[0]);
+ test[1]=abs(pose[1]-center[1]);
+ test[2]=abs(pose[2]-center[2]);
+
+ if(test[0] > (size[0]/2+DRONE_R)) return false;
+ else if(test[1] > (size[1]/2+DRONE_R)) return false;
+
+ if(test[0] <= (size[0]/2)){
+
+   if(test[2] <= (size[2]/2)) return true;
+ }
+
+ if(test[1] <= (size[1]/2)){
+
+   if(test[2] <= (size[2]/2)) return true;
+ }
+ 
+ return true;
 }
 
 
@@ -405,28 +447,53 @@ bool wczytaj(char *argv[], map<string,Interp4Command*> &wtyczki){
   Scene Scn;
 
   PlotVis.VisualizerScene(Scn);
-  DPose.SetPos_m(0,0,0);
+  DPose.SetPos_m(0,0,-100);
   PlotVis.Draw(&DPose);
 
   Wektor3D temp;
   string nazwa;
+  
+  sekwencja>>nazwa;
+
+  auto search=wtyczki.find(nazwa);
+  if(search != wtyczki.end()){
+    
+    if(search->second->ReadParams(sekwencja))
+      search->second->ExecCmd(&DPose,&PlotVis);
+  }
 
   while(!sekwencja.eof()){
+
     nazwa.clear();
     sekwencja>>nazwa;
 
-    auto search=wtyczki.find(nazwa);
+    search=wtyczki.find(nazwa);
     if(search != wtyczki.end()){
       
       if(search->second->ReadParams(sekwencja)){
 
 	temp=DPose.GetPos_m();
 	plik_w<<temp[0]<<" "<<temp[1]<<" "<<temp[2]<<endl;
+
 	search->second->ExecCmd(&DPose,&PlotVis);
+
+	if(Colision(DPose,Scn)==true){
+
+	  cout<<endl<<"trafiono w przeszkode!!"<<endl;
+
+	  cout << "Aby zakonczyc, nacisniecie klawisza ENTER" << endl;
+	  cin.ignore(100000,'\n');
+
+	  return false;
+	}
       }
-    }
-    
+    } 
   }
   plik_w.close();
+
+  cout << "Aby zakonczyc, nacisniecie klawisza ENTER" << endl;
+  cin.ignore(100000,'\n');
+
+  return true;
 }
 
